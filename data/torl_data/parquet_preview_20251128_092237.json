@@ -1,0 +1,89 @@
+{
+  "test.parquet": {
+    "shape": [
+      374,
+      5
+    ],
+    "columns": [
+      "data_source",
+      "prompt",
+      "ability",
+      "reward_model",
+      "extra_info"
+    ],
+    "dtypes": {
+      "data_source": "object",
+      "prompt": "object",
+      "ability": "object",
+      "reward_model": "object",
+      "extra_info": "object"
+    },
+    "preview": [
+      {
+        "data_source": "aime24",
+        "prompt": "[{'content': 'Please reason step by step, and put your final answer within \\\\boxed{}.', 'role': 'system'}\n {'content': 'Every morning Aya goes for a $9$-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of $s$ kilometers per hour, the walk takes her 4 hours, including $t$ minutes spent in the coffee shop. When she walks $s+2$ kilometers per hour, the walk takes her 2 hours and 24 minutes, including $t$ minutes spent in the coffee shop. Suppose Aya walks at $s+\\\\frac{1}{2}$ kilometers per hour. Find the number of minutes the walk takes her, including the $t$ minutes spent in the coffee shop.', 'role': 'user'}]",
+        "ability": "other",
+        "reward_model": {
+          "ground_truth": "204",
+          "stype": "rule"
+        },
+        "extra_info": {
+          "id": "57e97007-1081-404f-bd5c-8c9fac363c51",
+          "split": "test"
+        }
+      },
+      {
+        "data_source": "aime24",
+        "prompt": "[{'content': 'Please reason step by step, and put your final answer within \\\\boxed{}.', 'role': 'system'}\n {'content': 'Every morning Aya goes for a $9$-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of $s$ kilometers per hour, the walk takes her 4 hours, including $t$ minutes spent in the coffee shop. When she walks $s+2$ kilometers per hour, the walk takes her 2 hours and 24 minutes, including $t$ minutes spent in the coffee shop. Suppose Aya walks at $s+\\\\frac{1}{2}$ kilometers per hour. Find the number of minutes the walk takes her, including the $t$ minutes spent in the coffee shop.', 'role': 'user'}]",
+        "ability": "other",
+        "reward_model": {
+          "ground_truth": "204",
+          "stype": "rule"
+        },
+        "extra_info": {
+          "id": "57e97007-1081-404f-bd5c-8c9fac363c51",
+          "split": "test"
+        }
+      },
+      {
+        "data_source": "aime24",
+        "prompt": "[{'content': 'Please reason step by step, and put your final answer within \\\\boxed{}.', 'role': 'system'}\n {'content': 'Every morning Aya goes for a $9$-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of $s$ kilometers per hour, the walk takes her 4 hours, including $t$ minutes spent in the coffee shop. When she walks $s+2$ kilometers per hour, the walk takes her 2 hours and 24 minutes, including $t$ minutes spent in the coffee shop. Suppose Aya walks at $s+\\\\frac{1}{2}$ kilometers per hour. Find the number of minutes the walk takes her, including the $t$ minutes spent in the coffee shop.', 'role': 'user'}]",
+        "ability": "other",
+        "reward_model": {
+          "ground_truth": "204",
+          "stype": "rule"
+        },
+        "extra_info": {
+          "id": "57e97007-1081-404f-bd5c-8c9fac363c51",
+          "split": "test"
+        }
+      },
+      {
+        "data_source": "aime24",
+        "prompt": "[{'content': 'Please reason step by step, and put your final answer within \\\\boxed{}.', 'role': 'system'}\n {'content': 'Every morning Aya goes for a $9$-kilometer-long walk and stops at a coffee shop afterwards. When she walks at a constant speed of $s$ kilometers per hour, the walk takes her 4 hours, including $t$ minutes spent in the coffee shop. When she walks $s+2$ kilometers per hour, the walk takes her 2 hours and 24 minutes, including $t$ minutes spent in the coffee shop. Suppose Aya walks at $s+\\\\frac{1}{2}$ kilometers per hour. Find the number of minutes the walk takes her, including the $t$ minutes spent in the coffee shop.', 'role': 'user'}]",
+        "ability": "other",
+        "reward_model": {
+          "ground_truth": "204",
+          "stype": "rule"
+        },
+        "extra_info": {
+          "id": "57e97007-1081-404f-bd5c-8c9fac363c51",
+          "split": "test"
+        }
+      },
+      {
+        "data_source": "aime24",
+        "prompt": "[{'content': 'Please reason step by step, and put your final answer within \\\\boxed{}.', 'role': 'system'}\n {'content': 'Let $ABC$ be a triangle inscribed in circle $\\\\omega$. Let the tangents to $\\\\omega$ at $B$ and $C$ intersect at point $D$, and let $\\\\overline{AD}$ intersect $\\\\omega$ at $P$. If $AB=5$, $BC=9$, and $AC=10$, $AP$ can be written as the form $\\\\frac{m}{n}$, where $m$ and $n$ are relatively prime integers. Find $m + n$.', 'role': 'user'}]",
+        "ability": "other",
+        "reward_model": {
+          "ground_truth": "113",
+          "stype": "rule"
+        },
+        "extra_info": {
+          "id": "83384151-50bf-48e4-8e4b-6864b76b1bd3",
+          "split": "test"
+        }
+      }
+    ]
+  }
+}
