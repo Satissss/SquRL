@@ -53,6 +53,9 @@ python -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.temperature=1 \
     actor_rollout_ref.rollout.log_prob_micro_batch_size=8 \
     algorithm.kl_ctrl.kl_coef=0.0005\
+    reward_server.api_port=6517 \
+    reward_server.api_timeout=1500 \
+    reward_server.batch_size=4 \
     trainer.critic_warmup=0 \
     trainer.logger=['wandb'] \
     trainer.project_name=$PROJECT_NAME \
