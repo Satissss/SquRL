@@ -1,0 +1,52 @@
+# Sequence Parallel and PEFT (LoRA) Configuration
+data:
+  train_batch_size: 256  # Global batch size across all GPUs
+  micro_batch_size_per_gpu: 2  # Micro batch size per GPU for gradient accumulation
+  train_files: ~/data/train.parquet
+  val_files: ~/data/test.parquet
+  prompt_key: question
+  response_key: sql
+  max_length: 2048
+  truncation: error
+  balance_dp_token: False
+  chat_template: null
+
+model:
+  partial_pretrain: /mnt/yihan/model/qwen25_3_B_instuct
+  fsdp_config:
+    wrap_policy:
+      min_num_params: 0
+    cpu_offload: False
+    offload_params: False
+  external_lib: null
+  enable_gradient_checkpointing: True  # Enable for memory efficiency
+  trust_remote_code: True
+  use_liger: False  # Set to True if you want to use Liger kernel optimizations
+  
+  # LoRA Configuration
+  lora_rank: 16  # LoRA rank, typical values: 8, 16, 32, 64
+  lora_alpha: 32  # LoRA alpha, typically 2 * lora_rank
+  target_modules: all-linear  # Apply LoRA to all linear layers
+
+optim:
+  lr: 5e-5  # Higher learning rate for LoRA fine-tuning
+  betas: [0.9, 0.95]
+  weight_decay: 0.01
+  warmup_steps_ratio: 0.1
+  clip_grad: 1.0
+
+trainer:
+  default_local_dir: /tmp/sft_peft_model
+  default_hdfs_dir: null
+  resume_path: null
+  project_name: sql-sft-peft
+  experiment_name: qwen25_3b_lora
+  total_epochs: 3
+  total_training_steps: null  # Set this for early stopping, e.g., 1000
+  logger: wandb  # or ['console'] or ['tensorboard']
+  seed: 1
+
+# Sequence Parallel Configuration
+ulysses_sequence_parallel_size: 1  # Set to > 1 for sequence parallelism (must divide world_size)
+use_remove_padding: False  # Set to True when using sequence parallel
+
