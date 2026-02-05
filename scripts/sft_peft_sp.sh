@@ -1,7 +1,7 @@
 #!/bin/bash
 # PEFT (LoRA) + Sequence Parallel Training Script
 
-export WANDB_API_KEY=5a52cd797a3143e5f86d54544cb56ca8f395522a
+export WANDB_API_KEY=...
 export WANDB_PROJECT=squRL-sft
 export CUDA_VISIBLE_DEVICES=6,7
 
