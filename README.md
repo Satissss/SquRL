@@ -2,9 +2,7 @@
 
 <div align="center">
 
-**SquRL** - SQL Query Reinforcement Learning
-
-*A Scalable RL Framework for Training LLMs on Text-to-SQL Tasks*
+**SquRL** - *A Scalable RL Framework for Training LLMs on Dynamic Text-to-SQL Workflow Construction.*
 
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -17,15 +15,6 @@
 
 **SquRL** (SQL Query Reinforcement Learning) is a state-of-the-art reinforcement learning framework designed for training large language models (LLMs) to generate high-quality SQL queries from natural language. Built on scalable distributed training techniques, SquRL enables efficient fine-tuning of LLMs using PPO (Proximal Policy Optimization) with custom reward signals tailored for Text-to-SQL tasks.
 
-### Key Features
-
-- 🚀 **Scalable Distributed Training**: Built on FSDP (Fully Sharded Data Parallel) for efficient multi-GPU training
-- 🎯 **PPO-Based RL Training**: Implements state-of-the-art Proximal Policy Optimization for policy learning
-- 🔧 **Flexible Configuration**: Hydra-based configuration system for easy experiment management
-- 📊 **SQL-Specific Rewards**: Custom reward scoring functions optimized for SQL query generation
-- 🔌 **vLLM Integration**: Leverages vLLM for fast inference during rollout generation
-- 💾 **LoRA Support**: Parameter-efficient fine-tuning with Low-Rank Adaptation
-- 🔄 **Sequence Parallel**: Advanced parallelization strategies for handling long sequences
 
 ## Project Structure
 
@@ -60,7 +49,7 @@ SquRL/
 
 ### Prerequisites
 
-- Python 3.9 or higher
+- Python 3.11 or higher
 - CUDA 11.8+ (for GPU training)
 - Multiple GPUs recommended for distributed training
 - Sufficient disk space for model checkpoints and datasets
@@ -104,8 +93,8 @@ SquRL/
    Squrve/
    └── benchmarks/
        └── SquRL/
-           ├── scripts/
-           ├── verl/
+           ├── database/
+           ├── rl/
            └── ...
    ```
 
