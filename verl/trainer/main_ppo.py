@@ -33,6 +33,9 @@ def _select_rm_score_fn(data_source):
 def _select_batch_score_fn():
     return synsql.compute_score_batch
 
+# Available actors for SQL generation
+available_actors = synsql.DEFAULT_AVAILABLE_ACTORS
+
 class RewardManager():
     """The reward manager.
     """
@@ -97,9 +100,19 @@ class BatchRewardManager():
     """The reward manager.
     """
 
-    def __init__(self, tokenizer, num_examine) -> None:
+    def __init__(self, tokenizer, num_examine, config=None) -> None:
         self.tokenizer = tokenizer
         self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
+        # Get reward server config from config if available
+        if config and hasattr(config, 'reward_server'):
+            self.api_port = config.reward_server.get('api_port', 6517)
+            self.api_timeout = config.reward_server.get('api_timeout', 1500)
+            self.batch_size = config.reward_server.get('batch_size', 2)
+        else:
+            # Default values
+            self.api_port = 6517
+            self.api_timeout = 1500
+            self.batch_size = 2
 
     def __call__(self, data: DataProto):
         """We will expand this function gradually based on the available datasets"""
@@ -152,12 +165,10 @@ class BatchRewardManager():
                 'sequence': sequences_str,
             }
 
-        score_res, group_scalar_dict, final_score_dict = batch_compute_score_fn(response_batch)
-        
-        # 创建 group_scalar tensor，用于后续优势计算
-        group_scalar_tensor = torch.ones(len(data), dtype=torch.float32)
-        # 创建 final_score tensor，用于日志记录
-        final_score_tensor = torch.zeros(len(data), dtype=torch.float32)
+        score_res = batch_compute_score_fn(response_batch, 
+                                            api_port=self.api_port,
+                                            api_timeout=self.api_timeout,
+                                            batch_size=self.batch_size)
 
         for idx, metadata in sample_metadata.items():
             score = score_res.get(idx)
@@ -167,14 +178,6 @@ class BatchRewardManager():
             response_length = metadata['response_length']
             if response_length > 0:
                 reward_tensor[idx, response_length - 1] = score
-            
-            # 获取该样本对应的 group_scalar
-            group_scalar = group_scalar_dict.get(idx, 1.0)
-            group_scalar_tensor[idx] = group_scalar
-            
-            # 获取该样本对应的 final_score
-            final_score = final_score_dict.get(idx, -0.5)
-            final_score_tensor[idx] = final_score
 
             data_source = metadata['data_source']
             if data_source is None:
@@ -186,7 +189,7 @@ class BatchRewardManager():
             if already_print_data_sources[data_source] < self.num_examine:
                 already_print_data_sources[data_source] += 1
 
-        return reward_tensor, group_scalar_tensor, final_score_tensor
+        return reward_tensor
 
 import ray
 import hydra
@@ -269,10 +272,10 @@ def main_task(config):
         role_worker_mapping[Role.RewardModel] = ray.remote(RewardModelWorker)
         mapping[Role.RewardModel] = global_pool_id
 
-    reward_fn = BatchRewardManager(tokenizer=tokenizer, num_examine=0)
+    reward_fn = BatchRewardManager(tokenizer=tokenizer, num_examine=0, config=config)
 
     # Note that we always use function-based RM for validation
-    val_reward_fn = BatchRewardManager(tokenizer=tokenizer, num_examine=1)
+    val_reward_fn = BatchRewardManager(tokenizer=tokenizer, num_examine=1, config=config)
 
     resource_pool_manager = ResourcePoolManager(resource_pool_spec=resource_pool_spec, mapping=mapping)
 

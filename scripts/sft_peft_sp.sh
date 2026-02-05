@@ -2,12 +2,12 @@
 # PEFT (LoRA) + Sequence Parallel Training Script
 
 export WANDB_API_KEY=5a52cd797a3143e5f86d54544cb56ca8f395522a
-export WANDB_PROJECT=sql-sft
+export WANDB_PROJECT=squRL-sft
 export CUDA_VISIBLE_DEVICES=6,7
 
 set -x
 
-HOME=/llm_jzm/yihan/SQL-R1
+HOME=/llm_jzm/yihan/SquRL
 nproc_per_node=2  # Number of GPUs to use
 save_path=/llm_jzm/yihan/checkpoint/sft_peft/qwen-3b-lora-0103
 
@@ -40,7 +40,7 @@ torchrun --standalone --nnodes=1 --nproc_per_node=$nproc_per_node \
     optim.lr=1e-5\
     optim.clip_grad=1.0 \
     trainer.default_local_dir=$save_path \
-    trainer.project_name=sql-sft-peft \
+    trainer.project_name=squRL-sft-peft \
     trainer.experiment_name=qwen25_7b_lora_r${lora_rank} \
     trainer.logger=wandb \
     trainer.default_hdfs_dir=null \

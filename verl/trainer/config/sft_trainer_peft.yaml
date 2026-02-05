@@ -39,7 +39,7 @@ trainer:
   default_local_dir: /tmp/sft_peft_model
   default_hdfs_dir: null
   resume_path: null
-  project_name: sql-sft-peft
+  project_name: squRL-sft-peft
   experiment_name: qwen25_3b_lora
   total_epochs: 3
   total_training_steps: null  # Set this for early stopping, e.g., 1000

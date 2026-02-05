@@ -149,6 +149,11 @@ algorithm:
     enable: True
     max_num_gen_batches: 4
 
+reward_server:
+  api_port: 6517  # API server port for SQL evaluation
+  api_timeout: 1500  # Request timeout in seconds
+  batch_size: 2  # Batch size for batch scoring
+
 trainer:
   total_epochs: 30
   total_training_steps: null

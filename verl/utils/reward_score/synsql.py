@@ -1,16 +1,24 @@
 import re
 import os
-import sys
-sys.path.append('..')
 from typing import Dict, Tuple, Optional, List, Union
 from func_timeout import func_timeout, FunctionTimedOut
-import requests
 import ast
 from urllib import request, error
 from .exec_eval import eval_exec_match
-import signal
 import json
 import random
+
+# Default available actors for SQL generation
+DEFAULT_AVAILABLE_ACTORS = [
+    "RSLSQLBiDirParser", "MACSQLCoTParser", "CHESSSelectorParser", "LinkAlignParser",
+    "MACSQLGenerator", "CHESSGenerator", "RSLSQLGenerator", "LinkAlignGenerator",
+    "ChessScaler", "MACSQLScaler", "RSLSQLScaler",
+    "LinkAlignOptimizer", "MACSQLOptimizer", "CHESSOptimizer", "RSLSQLOptimizer",
+    "FastExecSelector", "CHESSSelector", "ChaseSelector"
+]
+
+# Scoring constants
+FORMAT_REWARD = 0.5
 
 def extract_solution(solution_str: str) -> Tuple[Optional[str], str]:
     """Extracts the final answer from the model's response string.
@@ -233,22 +241,17 @@ def validate_response_str(response_str: str, can_actors: List[str]=None) -> Tupl
     
     Args:
         response_str: LLM生成的response字符串
+        can_actors: 可选的候选actor列表，如果为None则使用默认列表
         
     Returns:
         Tuple[bool, List]: (是否验证成功, actor列表)
             - 成功返回 (True, parsed_actor_list)
             - 失败返回 (False, [])
     """
-    # return True, ['MACSQLGenerator']
-    valid_actor_list = ['RSLSQLBiDirParser', 'MACSQLCoTParser', 'CHESSSelectorParser', 
-                        'LinkAlignParser', 'MACSQLGenerator', 'CHESSGenerator', 
-                        'RSLSQLGenerator', 'LinkAlignGenerator', 'ChessScaler', 
-                        'MACSQLScaler', 'RSLSQLScaler', 'LinkAlignOptimizer', 
-                        'MACSQLOptimizer', 'CHESSOptimizer', 'RSLSQLOptimizer', 
-                        'FastExecSelector', 'CHESSSelector']
-    
     if can_actors is not None:
         valid_actor_list = can_actors
+    else:
+        valid_actor_list = DEFAULT_AVAILABLE_ACTORS
     
     try:
         # 步骤1: 提取 <answer>...</answer> 标签中的内容
@@ -319,76 +322,6 @@ def validate_response_str(response_str: str, can_actors: List[str]=None) -> Tupl
         print(f"[Error] Unexpected error during validation: {e}")
         return False, []
 
-def compute_actor_score(parsed_list, can_actors) -> float:
-    def flatten_list(lst):
-        result = []
-        for item in lst:
-            if isinstance(item, list):
-                result.extend(flatten_list(item))
-            else:
-                result.append(item)
-        return result
-    
-    def has_nested_list(lst):
-        for item in lst:
-            if isinstance(item, list) and len(item) > 1:
-                return True
-        return False
-    
-    # 展平parsed_list获取所有actor
-    flattened_actors = flatten_list(parsed_list)
-    
-    # 1. 计算actor覆盖率得分 (max_reward: 0.05)
-    # 计算parsed_list中不同的actor占can_actors的比例
-    # if len(can_actors) > 0:
-    #     unique_actors = set(flattened_actors)
-    #     valid_unique_actors = unique_actors & set(can_actors)  # 只计算有效的actor
-    #     coverage_ratio = len(valid_unique_actors) / len(can_actors)
-    #     coverage_score = min(coverage_ratio * 0.05, 0.05)
-    # else:
-    #     coverage_score = 0.0
-    
-    # 1.5. 计算每种 actor 类型的占比
-    actor_type_score = 0.1
-    actor_type = {}
-    type_lis = ['rsl',"mac","chess","link","fast"]
-    for actor in can_actors:
-        for atype in type_lis:
-            if str(actor).lower().startswith(atype):
-                actor_type[atype] = False
-                break
-    for actor in flattened_actors:
-        for atype in type_lis:
-            if str(actor).lower().startswith(atype):
-                actor_type[atype] = True
-                break
-    type_score = len([val for key, val in actor_type.items() if val]) / len(actor_type.keys()) * actor_type_score
-
-
-    # 2. 计算parsed_list长度得分 (max_reward: 0.2)
-    # 假设理想长度在3-10之间
-    list_length = len(flattened_actors)
-    if 3 <= list_length <= 6:
-        # 理想长度范围，给满分
-        length_score =  0.2
-    elif list_length > 6:
-        # 超过10个，分数递减
-        length_score = max(0.2 - (list_length - 6) * 0.02, 0.0)
-    else:
-        # 少于3个，分数按比例递减
-        length_score = list_length / 3 * 0.2
-    
-    # # 3. 检查是否使用嵌套列表 (max_reward: 0.05)
-    # nested_score = 0.05 if has_nested_list(parsed_list) else 0.0
-    
-    # 计算总分
-    # total_score = coverage_score + length_score + nested_score + type_score
-    total_score = length_score +  type_score
-
-    return total_score
-
-
-
 def http_post_json(url: str, payload: dict, timeout: float = 720):
     data = json.dumps(payload).encode("utf-8")
     headers = {"Content-Type": "application/json"}
@@ -412,81 +345,43 @@ def http_post_json(url: str, payload: dict, timeout: float = 720):
     except Exception as e:
         return 0, str(e)
 
-def cal_final_score(score_lis: List[float]) -> float:
-    score_lis = [x for x in score_lis if x > -0.25] # 排除无法执行出错的 SQL
-    all_len = len(score_lis)
-    valid_num = len([x for x in score_lis if x > 2.5])
-    invalid_num = all_len - valid_num
-        
-    if valid_num == 0:
-        return -0.5
-        
-    if valid_num > invalid_num:
-        return 3.0
-        
-    if valid_num == invalid_num:
-        # 如果正确样本和错误样本数量相同，那么选出正确样本的最小概率是 0.5
-        return 3.0 if random.random() < 0.5 else -0.5
-        
-    prob =  0.3 * valid_num / all_len
-    return 3.0 if random.random() < prob else -0.5
-
-
-def compute_score_batch(batch_responses: dict, batch_size: int = 2):
-    # port = 6535  # SquRL
-    port = 6517  # FinalRL
-
-    FORMAT_REWARD = 0.5
-    use_actor_reward = True
-    VALID_SCORE_THRESHOLD = 2.5  # 用于判断是否为有效分数的阈值
+def compute_score_batch(batch_responses: dict, 
+                        api_port: int = 6517,
+                        api_timeout: int = 1500, 
+                        batch_size: int = 2):
+    """批量计算响应分数
     
+    Args:
+        batch_responses: 响应批次字典
+        api_port: API服务器端口
+        api_timeout: API请求超时时间（秒）
+        batch_size: 批次大小
+        
+    Returns:
+        分数结果字典
+    """
     # 最终结果字典，存储每个index的分数
     result_scores = {}
-    actor_scores = {}
     # 存储验证通过的数据，用于后续批量请求
     # 格式: {instance_id: [(index, task_lis), ...]}
     valid_data = {}
-    diff_actor_dict = {}
-    # 记录每个 index 属于哪个 instance_id
-    index_to_instance = {}
+    
     # 第一步：验证所有response_str，并初始化分数
     for instance_id, response_list in batch_responses.items():
         valid_data[instance_id] = []
         
         for index, response_str, can_actors in response_list:
-            # 记录 index 到 instance_id 的映射
-            index_to_instance[index] = instance_id
-            
             # 调用验证函数
             is_valid, task_lis = validate_response_str(response_str, can_actors)
             
             if is_valid:
                 # 验证通过，初始分数为 FORMAT_REWARD
                 result_scores[index] = FORMAT_REWARD
-                actor_score = compute_actor_score(task_lis, can_actors)
-                actor_scores[index] = actor_score
                 # 保存用于后续批量请求
                 valid_data[instance_id].append((index, task_lis))
             else:
-                # 验证失败，分数为0，不参与后续计算
+                # 验证失败，分数为负的FORMAT_REWARD
                 result_scores[index] = -abs(FORMAT_REWARD)
-
-        # 计算不同的 actor_lis 数量，并赋值给 differ_actor_len
-        # 将嵌套列表转换为可哈希的元组形式，用于去重比较
-        def list_to_tuple(lst):
-            """递归将嵌套列表转换为嵌套元组（可哈希）"""
-            if isinstance(lst, list):
-                return tuple(list_to_tuple(item) for item in lst)
-            return lst
-        
-        # 收集该 instance_id 下所有验证通过的 task_lis 并去重
-        unique_task_tuples = set()
-        for index, task_lis in valid_data[instance_id]:
-            task_tuple = list_to_tuple(task_lis)
-            unique_task_tuples.add(task_tuple)
-        
-        differ_actor_len = len(unique_task_tuples)
-        diff_actor_dict[instance_id] = 2 * len(response_list) - differ_actor_len
 
 
     # 第二步：分批发送POST请求
@@ -507,12 +402,11 @@ def compute_score_batch(batch_responses: dict, batch_size: int = 2):
             task_lis_list = [task_lis for _, task_lis in valid_data[instance_id]]
             payload[instance_id] = task_lis_list
         print(payload)
+        
         # 发送POST请求
         try:
-            # url = f"http://127.0.0.1:{port}/api/run_batch_new"
-            url = f"http://127.0.0.1:{port}/api/run_batch"
-            status, batch_scores  = http_post_json(url, payload, timeout=1500)
-            # response = requests.post(url, json=payload, timeout=300)
+            url = f"http://127.0.0.1:{api_port}/api/run_batch"
+            status, batch_scores = http_post_json(url, payload, timeout=api_timeout)
             print(batch_scores)
             
             # 还原每个index的分数
@@ -523,8 +417,6 @@ def compute_score_batch(batch_responses: dict, batch_size: int = 2):
                 # 确保返回的分数列表长度与输入一致
                 if len(score_list) == len(index_task_pairs):
                     for (index, _), score in zip(index_task_pairs, score_list):
-                        # if use_actor_reward and score >= 2.5:
-                        #     score += actor_scores.get(index,0)
                         # 将评测分数加到已有的FORMAT_REWARD上
                         result_scores[index] += score
                 else:
@@ -534,61 +426,4 @@ def compute_score_batch(batch_responses: dict, batch_size: int = 2):
             print(f"[Error] Failed to process batch {batch_start}-{batch_end}: {str(e)}")
             # 请求失败时，这些index保持原有的FORMAT_REWARD分数
     
-    # 第三步：统计每个 instance_id 的 valid_num（score > VALID_SCORE_THRESHOLD）并计算 group_scalar
-    MIN_GROUP_SCALAR = 0.2  # 最小 group_scalar 值，避免为 0
-    valid_num_dict = {}  # {instance_id: valid_num}
-    for instance_id in batch_responses.keys():
-        valid_num_dict[instance_id] = 0
-    
-    # 统计每个 instance_id 中 score > VALID_SCORE_THRESHOLD 的数量
-    for index, score in result_scores.items():
-        instance_id = index_to_instance.get(index)
-        if instance_id is not None and score > VALID_SCORE_THRESHOLD:
-            valid_num_dict[instance_id] += 1
-    
-    # 计算每个 instance_id 的 group_scalar = valid_num / (2N - Ndiff)
-    group_scalar_by_instance = {}
-    for instance_id in batch_responses.keys():
-        valid_num = valid_num_dict[instance_id]
-        denominator = diff_actor_dict.get(instance_id, 1)  # 避免除零
-        if denominator <= 0:
-            denominator = 1
-        # 计算 group_scalar，确保最小值不低于 MIN_GROUP_SCALAR
-        group_scalar = valid_num / denominator
-        # group_scalar_by_instance[instance_id] = max(group_scalar, MIN_GROUP_SCALAR)
-        group_scalar_by_instance[instance_id] = 0.5 + group_scalar
-
-    # 为每个 index 分配对应的 group_scalar
-    group_scalar_dict = {}
-    for index in result_scores.keys():
-        instance_id = index_to_instance.get(index)
-        if instance_id is not None:
-            group_scalar_dict[index] = group_scalar_by_instance[instance_id]
-        else:
-            group_scalar_dict[index] = 1.0  # 默认值
-    
-    # 计算每个 instance_id 的 final_score（用于日志记录）
-    final_score_by_instance = {}
-    for instance_id in batch_responses.keys():
-        # 收集该 instance_id 下所有 index 的 score
-        score_lis = []
-        for index, score in result_scores.items():
-            if index_to_instance.get(index) == instance_id:
-                score_lis.append(score)
-        
-        # 调用 cal_final_score 计算该 instance_id 的最终标量值
-        if len(score_lis) > 0:
-            final_score_by_instance[instance_id] = cal_final_score(score_lis)
-        else:
-            final_score_by_instance[instance_id] = -0.5
-    
-    # 为每个 index 分配对应的 final_score（与 group_scalar_dict 方式一致）
-    final_score_dict = {}
-    for index in result_scores.keys():
-        instance_id = index_to_instance.get(index)
-        if instance_id is not None:
-            final_score_dict[index] = final_score_by_instance[instance_id]
-        else:
-            final_score_dict[index] = -0.5  # 默认值
-    
-    return result_scores, group_scalar_dict, final_score_dict
+    return result_scores

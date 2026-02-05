@@ -21,7 +21,7 @@ nvidia-smi
 python -m verl.trainer.main_ppo \
     algorithm.adv_estimator=grpo \
     data.train_files=$DATA_DIR_PATH/rl_dataset_dynamic.parquet \
-    data.val_files=$DATA_DIR_PATH/rl_test.parquet \
+    data.val_files=$DATA_DIR_PATH/rl_dataset_dynamic.parquet \
     data.train_batch_size=4 \
     data.val_batch_size=8 \
     data.max_prompt_length=8192 \
