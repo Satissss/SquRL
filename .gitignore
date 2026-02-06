@@ -60,9 +60,7 @@ logs/
 .coverage
 htmlcov/
 
-# 数据和模型文件
-data/
-*.pkl
+
 *.h5
 *.pt
 *.pth
