@@ -21,10 +21,10 @@
 
 | Model                    | Huggingface | ModelScope |
 |---------------------------|-------------|------------|
-| SquRL-1.5B (only SFT)     |             |            |
-| SquRL-1.5B                |             |            |
-| SquRL-7B (only SFT)       |             | [SquRL-7B-SFT](https://www.modelscope.cn/models/Satissss/SquRL-7B-SFT)            |
-| SquRL-7B                  |             |    |
+| SquRL-1.5B (only SFT)     |      -       | [SquRL-1.5B-SFT](https://www.modelscope.cn/models/Satissss/SquRL-1.5B-SFT)     |
+| SquRL-1.5B                |      -       |     -     |
+| SquRL-7B (only SFT)       |      -       | [SquRL-7B-SFT](https://www.modelscope.cn/models/Satissss/SquRL-7B-SFT)     |
+| SquRL-7B                  |      -       |    -      |
 
 
 
@@ -36,6 +36,8 @@
 - CUDA 11.8+ (for GPU training)
 - Multiple GPUs recommended for distributed training
 - Sufficient disk space for model checkpoints and datasets
+
+---
 
 ### Setup
 
@@ -89,6 +91,8 @@
    # Add your API KEY in the configuration file
    ```
 
+---
+
 
 ### Training
 
@@ -103,7 +107,6 @@ Train a base model using supervised fine-tuning with LoRA (Low-Rank Adaptation):
 bash scripts/sft_peft_sp.sh
 ```
 
----
 
 #### Step 2: Reinforcement Learning (RL)
 
@@ -125,6 +128,65 @@ cd SquRL
 bash scripts/rl_train_fsdp.sh
 ```
 
+## 🔧 Utilization
+
+Use SquRL for inference within [Squrve](https://github.com/Satissss/Squrve) to evaluate Text-to-SQL performance. SquRL employs the **ForkGatherAgent** for dynamic workflow construction at inference time.
+
+### Prerequisites
+
+- Squrve backend set up (see [Setup](#setup) section)
+- SquRL model deployed as an LLM API service (e.g., via [vLLM](https://github.com/vllm-project/vllm) or [SGLang](https://github.com/sgl-project/sglang))
+
+### Configuration
+
+1. **Edit the startup config:**
+
+   ```bash
+   cd Squrve
+   vim startup/startup_config.json
+   ```
+
+2. **Add a ForkGatherAgent task** to the `task_meta` list with the following configuration:
+
+   ```json
+   {
+     "task_id": "agent",
+     "task_type": "AgentTask",
+     "data_source": "<path to your NL question data>",
+     "schema_source": "<path to database schemas>",
+     "dataset_save_path": "<path to save evaluation results>",
+     "is_save_dataset": true,
+     "eval_type": ["execute_accuracy"],
+     "meta": {
+       "task": {
+         "agent_type": "ForkGatherAgent"
+       },
+       "actor": {
+         "max_n": 5,
+         "select_type": "FastExecSelector",
+         "rollout_llm_args": {
+           "api_key": "<API key for your LLM service>",
+           "base_url": "<URL of your deployed SquRL model>",
+           "temperature": 1.0
+         }
+       }
+     },
+     "open_parallel": true,
+     "max_workers": 5
+   }
+   ```
+
+3. **Key parameters:**
+
+   | Parameter | Description |
+   |-----------|-------------|
+   | `data_source` | Path to natural language question dataset |
+   | `schema_source` | Path to database schema definitions |
+   | `dataset_save_path` | Directory to save evaluation outputs |
+   | `max_n` | Number of candidate workflows to explore per query |
+   | `select_type` | Selector for choosing final SQL (e.g., `FastExecSelector`) |
+   | `rollout_llm_args.base_url` | API endpoint of your deployed SquRL model |
+   | `rollout_llm_args.api_key` | API key for the LLM service |
 
 
 ## 🤝 Contributing
