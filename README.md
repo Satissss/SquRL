@@ -13,37 +13,20 @@
 
 ## 📖 Overview
 
-**SquRL** (SQL Query Reinforcement Learning) is a state-of-the-art reinforcement learning framework designed for training large language models (LLMs) to generate high-quality SQL queries from natural language. Built on scalable distributed training techniques, SquRL enables efficient fine-tuning of LLMs using PPO (Proximal Policy Optimization) with custom reward signals tailored for Text-to-SQL tasks.
+**SquRL** (SQL Query Reinforcement Learning) is a reinforcement learning framework that enables LLMs to adaptively construct Text-to-SQL workflows at inference time. While Text-to-SQL has achieved impressive progress, real-world applicability remains limited by reliance on single static pipelines that struggle with out-of-distribution and long-tail scenarios. SquRL learns dynamic policies that consistently outperform the best static workflow—with gains driven by heterogeneity across candidate workflows. The framework employs a rule-based reward function and two training mechanisms: *dynamic actor masking* for broader exploration, and *pseudo rewards* for improved training efficiency. Experiments on widely-used benchmarks demonstrate that SquRL outperforms state-of-the-art static methods, with especially pronounced gains on complex and out-of-distribution queries.
+
+![System Architecture](./assets/overview.png)
+
+## 🤖 Checkpoint
+
+| Model                    | Huggingface | ModelScope |
+|---------------------------|-------------|------------|
+| SquRL-1.5B (only SFT)     |             |            |
+| SquRL-1.5B                |             |            |
+| SquRL-7B (only SFT)       |             | [SquRL-7B-SFT](https://www.modelscope.cn/models/Satissss/SquRL-7B-SFT)            |
+| SquRL-7B                  |             |    |
 
 
-## Project Structure
-
-```
-SquRL/
-├── scripts/                    # Training scripts
-│   ├── rl_train_fsdp.sh       # RL training with FSDP
-│   └── sft_peft_sp.sh         # SFT with LoRA + Sequence Parallel
-├── verl/
-│   ├── trainer/               # Training modules
-│   │   ├── config/            # Hydra configuration files
-│   │   ├── ppo/               # PPO trainer implementation
-│   │   ├── main_ppo.py        # PPO training entry point
-│   │   └── fsdp_sft_trainer.py # SFT trainer
-│   ├── workers/               # Distributed workers
-│   │   ├── actor/             # Actor model workers
-│   │   ├── critic/            # Critic model workers
-│   │   ├── rollout/           # Rollout generation workers
-│   │   └── reward_model/      # Reward model workers
-│   ├── utils/
-│   │   ├── reward_score/      # Reward scoring functions
-│   │   │   └── squrl.py       # SQL-specific reward scoring
-│   │   └── dataset/           # Dataset utilities
-│   └── third_party/
-│       └── vllm/              # vLLM integration for multiple versions
-├── patches/                   # Patches for external dependencies
-├── requirements.txt           # Python dependencies
-└── LICENSE                    # Apache 2.0 License
-```
 
 ## 🚀 Quick Start
 
@@ -54,7 +37,7 @@ SquRL/
 - Multiple GPUs recommended for distributed training
 - Sufficient disk space for model checkpoints and datasets
 
-### Installation
+### Setup
 
 1. **Clone the repository:**
 
@@ -107,46 +90,41 @@ SquRL/
    ```
 
 
-## 📚 Training
+### Training
 
-### Step 1: Supervised Fine-Tuning (SFT)
+SquRL follows a two-stage training pipeline: **SFT** (Supervised Fine-Tuning) first, then **RL** (Reinforcement Learning) with PPO.
 
-First, train a base model using supervised fine-tuning with LoRA (Low-Rank Adaptation):
+
+#### Step 1: Supervised Fine-Tuning (SFT)
+
+Train a base model using supervised fine-tuning with LoRA (Low-Rank Adaptation):
 
 ```bash
 bash scripts/sft_peft_sp.sh
 ```
 
-**Configuration:**
-- Edit `scripts/sft_peft_sp.sh` to customize:
-  - Model path and architecture
-  - LoRA rank and alpha parameters
-  - Learning rate and batch size
-  - Sequence parallel settings
+---
 
-**Output:**
-- Model checkpoints will be saved in the configured output directory
-- Training logs and metrics are available in the logs folder
+#### Step 2: Reinforcement Learning (RL)
 
-### Step 2: Reinforcement Learning Training (RL)
+After SFT completes, continue with PPO-based reinforcement learning. **Prerequisite:** The Squrve backend must be running to compute rewards.
 
-After SFT, continue with PPO-based reinforcement learning training:
+**a. Start the Squrve backend server** (in a separate terminal):
 
-1. **Start the Squrve backend server:**
+```bash
+cd Squrve/app
+python run.py
+```
 
-   ```bash
-   cd Squrve/app
-   python run.py
-   ```
+This starts the reward computation service for evaluating SQL query quality.
 
-   This starts the reward computation service for evaluating SQL query quality.
+**b. Launch RL training:**
 
-2. **Launch RL training:**
+```bash
+cd SquRL
+bash scripts/rl_train_fsdp.sh
+```
 
-   ```bash
-   cd SquRL
-   bash scripts/rl_train_fsdp.sh
-   ```
 
 
 ## 🤝 Contributing
@@ -159,20 +137,34 @@ Contributions are welcome! Please feel free to:
 
 Please ensure your code follows the existing style and includes appropriate tests.
 
-## 📄 License
-
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Acknowledgments
 
 - Built on top of the [SQL-R1](https://github.com/DataArcTech/SQL-R1) framework
 - Uses [Squrve](https://github.com/Satissss/Squrve) for Text-to-SQL evaluation
 
-## 📞 Contact
 
-For questions or support, please:
-- Open an issue on GitHub
-- Contact the maintainers
+## 📄 Reference
+
+If you use SquRL in your research, please cite our paper:
+
+> **Beyond Static Pipelines: Learning Dynamic Workflows for Text-to-SQL**  
+> Yihan Wang, Peiyu Liu, Runyu Chen, Wei Xu  
+> *arXiv preprint arXiv:2602.15564*, 2026  
+> [📄 Paper](https://arxiv.org/abs/2602.15564) | [DOI](https://doi.org/10.48550/arXiv.2602.15564)
+
+**BibTeX:**
+
+```bibtex
+@article{wang2026beyond,
+  title   = {Beyond Static Pipelines: Learning Dynamic Workflows for Text-to-SQL},
+  author  = {Wang, Yihan and Liu, Peiyu and Chen, Runyu and Xu, Wei},
+  journal = {arXiv preprint arXiv:2602.15564},
+  year    = {2026},
+  doi     = {10.48550/arXiv.2602.15564},
+  url     = {https://arxiv.org/abs/2602.15564}
+}
+```
 
 ---
 
