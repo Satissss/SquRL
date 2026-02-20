@@ -22,7 +22,7 @@
 | Model                    | Huggingface | ModelScope |
 |---------------------------|-------------|------------|
 | SquRL-1.5B (only SFT)     |      -       | [SquRL-1.5B-SFT](https://www.modelscope.cn/models/Satissss/SquRL-1.5B-SFT)     |
-| SquRL-1.5B                |      -       |     -     |
+| SquRL-1.5B                |      -       | [SquRL-1.5B](https://www.modelscope.cn/models/Satissss/SquRL-1.5B)      |
 | SquRL-7B (only SFT)       |      -       | [SquRL-7B-SFT](https://www.modelscope.cn/models/Satissss/SquRL-7B-SFT)     |
 | SquRL-7B                  |      -       |    -      |
 
